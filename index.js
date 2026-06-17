@@ -5,10 +5,10 @@ const personagem = {
     nomePersonagem: "",
     nivel: 5,
     xp: 0,
-    PV: 0,
-    PM: 0,
-    Defesa: 0,
-    DefesaMagica: 0,
+    pv: 0,
+    pm: 0,
+    defesa: 0,
+    defesaMagica: 0,
 
     itens: [],
 
@@ -21,12 +21,31 @@ const personagem = {
     }
 };
 
-const inimigo ={
-    nome: "Goblin",
-    PV: 20,
-    Defesa: 2,
-    DefesaMagica: 1
-};
+const inimigos = [
+    {
+        nome: "Goblin",
+        pv: 20,
+        derrotado: false,
+        xpInimigo: 1,
+        defesa: 9,
+    },
+    {
+        nome: "Orc",
+        pv: 25,
+        derrotado: false,
+        xpInimigo: 2,
+        defesa: 10,
+    }, {
+        nome: "Lobo",
+        pv: 20,
+        derrotado: false,
+        xpInimigo: 1,
+        defesa: 8,
+    }
+];
+
+let inimigoAtual = null;
+let emCombate = false;
 
 const itensDoMapa = {
 
@@ -35,7 +54,9 @@ const itensDoMapa = {
 
 
 let dados = [6, 6, 8, 10];
-let act = ["Lutar", "Explorar", "Usar Item", "Checar Status"];
+let acoesMExploracao = [ "Explorar", "Checar Status", "Usar Item" ];
+let acoesMCombate = [ "Atacar", "Defender", "Usar Item", "Fugir" ];
+
 let nome = prompt("Digite seu nome: ");
 let nomePersonagem = prompt("Digite o nome do seu personagem: ");
 personagem.nome = nome;
@@ -60,10 +81,10 @@ function criarPersonagem() {
     dados.splice(dados.indexOf(valorAtributo), 1);
 
 }
-    personagem.PV = Number(((personagem.atributos.vigor + personagem.nivel) * 5));
-    personagem.PM = Number(((personagem.atributos.vontade + personagem.nivel) * 5));
-    personagem.Defesa = Number(personagem.atributos.destreza);
-    personagem.DefesaMagica = Number(personagem.atributos.astucia);
+    personagem.pv = Number(((personagem.atributos.vigor + personagem.nivel) * 5));
+    personagem.pm = Number(((personagem.atributos.vontade + personagem.nivel) * 5));
+    personagem.defesa = Number(personagem.atributos.destreza);
+    personagem.defesaMagica = Number(personagem.atributos.astucia);
 
     console.log(`\nAtributos do personagem ${personagem.nomePersonagem}:`);
     for (let atributo in personagem.atributos) {
@@ -71,13 +92,18 @@ function criarPersonagem() {
         console.log(`${capital}: ${personagem.atributos[atributo]}`);
     }
 
-    console.log("Defesa: " + personagem.Defesa);
-    console.log("Defesa Mágica: " + personagem.DefesaMagica);
-    console.log("PV: " + personagem.PV);
-    console.log("PM: " + personagem.PM);
+    console.log("Defesa: " + personagem.defesa);
+    console.log("Defesa Mágica: " + personagem.defesaMagica);
+    console.log("PV: " + personagem.pv);
+    console.log("PM: " + personagem.pm);
 }
 
 criarPersonagem();
+
+function setarInimigoAtual(enemy) {
+    inimigoAtual = enemy;
+
+}
 
     function atacar(enemy) {
         let dadoD1 = [];
@@ -87,33 +113,57 @@ criarPersonagem();
         // for (let i = 0; i < dadoD1.length; i++) {
         //    console.log(`Dado ${i + 1}: ${dadoD1[i]}`);
         // }
-        
-        
+        if (inimigoAtual === null) {
+            console.log("Não há inimigos para atacar.");
+            return;
+            } {
 
-        if (enemy.PV > 0) {
-            let acerto = dadoD1.reduce((a, b) => a + b, 0);
-            console.log(`Você rolou um acerto de ${acerto}.`);
-            if (acerto > enemy.Defesa) {
-                let dano = Number(Math.max(...dadoD1)) + 5;
-                enemy.PV -= dano;
-                if (enemy.PV <= 0) {
-                    enemy.PV = 0;
-                    console.log("O inimigo já foi derrotado!");
-                   
-                }
-                console.log(`Você acertou o inimigo e causou ${dano} de dano!`);
-                console.log(`PV restante do inimigo: ${enemy.PV}`);
-                console.log("Você derrotou o inimigo ganhou 10 de experiência!");
-                personagem.xp += 1;
-                subirNivel();
+
+            if (enemy.pv === 0 || enemy.pv < 0) {
+                enemy.derrotado = true;
+                console.log("O inimigo já foi derrotado!");
+                emCombate = false;
             } else {
-                console.log("Você errou o ataque!");
+                if (!enemy.derrotado) {
+                    emCombate = true;
+                    let acerto = dadoD1.reduce((a, b) => a + b, 0);
+                    console.log(`Você rolou um acerto de ${acerto}.`);
+                    console.log(`Defesa do inimigo: ${enemy.defesa}`);
+                    if (acerto > enemy.defesa) {
+                        let dano = Number(Math.max(...dadoD1)) + 5;
+                        enemy.pv -= dano;
+
+                        console.log(`Você acertou o inimigo e causou ${dano} de dano!`);
+                        
+
+                            if (enemy.pv === 0 || enemy.pv < 0) {
+                            enemy.pv = 0;
+                            enemy.derrotado = true;
+                            console.log(`Você derrotou o inimigo ganhou ${enemy.xpInimigo} de experiência!`);
+                                personagem.xp += Number(10 * enemy.xpInimigo);
+                                subirNivel();
+                            } else {
+                                console.log(`PV restante do inimigo: ${enemy.pv}`);
+                            }
+                        } else {
+                            
+                            console.log("Você errou o ataque!");
+                        }
+                    } else {
+                        console.log("O inimigo já foi derrotado!");
+                    }
             }
-        } else {
-            console.log("O inimigo já foi derrotado!");
-            
-        }
+            }
+
         
+        
+    }
+
+    function mostrarInimigo (enemy) {
+        console.log(" ==== INIMIGO A FRENTE ====");
+        console.log(`Tipo de Inimigo: ${enemy.nome}`);
+        console.log(`Vida do Inimigo: ${enemy.pv}`);
+        console.log(`Defesa do Inimigo: ${enemy.defesa}`);
     }
 
     function subirNivel (){
@@ -121,13 +171,22 @@ criarPersonagem();
             personagem.nivel += 1;
             personagem.xp = 0;
             console.log(`Parabéns! Você subiu para o nível ${personagem.nivel}!`);
+            personagem.pv += 2;
+            personagem.pm += 2;
+            console.log(`PV aumentado para ${personagem.pv} e PM aumentado para ${personagem.pm}.`);
         }
     }
 
-    function mostrarMenu () {
-        for (let i = 0; i < act.length; i++) {
-            
-            console.log(`${i + 1}. ${act[i]}\n`);
+    function mostrarMenuExploração () {
+        for (let i = 0; i < acoesMExploracao.length; i++) {
+            console.log(`${i + 1}: ${acoesMExploracao[i]}`)
+        }
+        
+    }
+
+    function mostrarMenuCombate () {
+        for (let i = 0; i < acoesMCombate.length; i++) {
+            console.log(`${i + 1}: ${acoesMCombate[i]}`)
         }
         
     }
@@ -138,10 +197,10 @@ criarPersonagem();
         let capital= atributo.charAt(0).toUpperCase() + atributo.slice(1);
         console.log(`${capital}: ${personagem.atributos[atributo]}`);
     }
-        console.log("Defesa: " + personagem.Defesa);
-        console.log("Defesa Mágica: " + personagem.DefesaMagica);
-        console.log("PV: " + personagem.PV);
-        console.log("PM: " + personagem.PM);
+        console.log("Defesa: " + personagem.defesa);
+        console.log("Defesa Mágica: " + personagem.defesaMagica);
+        console.log("PV: " + personagem.pv);
+        console.log("PM: " + personagem.pm);
     }
     
     function rolarDado(nLados) {
@@ -192,6 +251,14 @@ criarPersonagem();
         }
     }
 
+    function inimigoDaVez() {
+    let indice = Number(Math.floor(Math.random() * inimigos.length));
+    
+    return {...inimigos[indice]};
+    
+
+    }
+
     function explorar() {
         console.log("Você escolheu explorar o ambiente!");
         let evento = Number(rolarDado(6));
@@ -202,9 +269,10 @@ criarPersonagem();
                 console.log(
                     "Você encontrou um inimigo!" +
                     "Prepare-se para a batalha!");
-                atacar(inimigo);
-                
-                    break;
+                    inimigoAtual = inimigoDaVez();
+                mostrarInimigo(inimigoAtual);
+                emCombate = true;
+                break;
             case 3:
             case 4:
                 console.log("Você encontrou um baú com um item valioso!");
@@ -221,23 +289,50 @@ criarPersonagem();
     }
 
     while (true) {
-        console.log("\nEscolha uma ação: 1, 2, 3 ou 4");
-        mostrarMenu();
-        let escolhas = prompt().toLowerCase();
+        console.log("\nEscolha uma ação: ");
+        if (emCombate === false){
+            mostrarMenuExploração();
+            let escolhas = prompt();
         switch (escolhas) {
             case "1":
-                atacar(inimigo);
+                if (inimigoAtual != null){
+                    console.log("Não é possível explorar. Existe um inimigo próximo!");
+                } else {
+                    explorar();
+                }
                 break;
             case "2":
-                explorar();
+                checarStatus();
                 break;
             case "3":
                 console.log("Você escolheu usar um item!");
                 break;
+            default:
+                console.log("Ação inválida. Por favor, escolha uma ação válida.");
+        }
+        } else {
+            mostrarMenuCombate();
+            let escolhaCombate = prompt();
+            switch (escolhasCombate) {
+            case "1":
+                inimigoAtual = inimigoDaVez();
+                atacar(inimigoAtual);
+                break;
+            case "2":
+                //Criar o ataque do inimigo
+                //Criar a defesa do personagem
+                break;
+            case "3":
+                console.log("Você escolheu usar um item!");
+                //Criar a escolha dos itens
+                break;
             case "4":
-                checarStatus();
+                //Criar o fugir
                 break;
             default:
                 console.log("Ação inválida. Por favor, escolha uma ação válida.");
         }
+
+        }
+        
     }
