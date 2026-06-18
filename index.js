@@ -1,9 +1,11 @@
 const prompt = require ('prompt-sync') ({sigint: true});
 
 const personagem = {
+    jogador: "",
     nome: "",
-    nomePersonagem: "",
     nivel: 5,
+    derrotado: false,
+    player: true,
     xp: 0,
     pv: 0,
     pm: 0,
@@ -27,25 +29,46 @@ const inimigos = [
         pv: 20,
         derrotado: false,
         xpInimigo: 1,
+        player: false,
         defesa: 9,
+        atributos: {
+            destreza: 10,
+            vigor: 6,
+            astucia: 6,
+            vontade: 6,
+        }
     },
     {
         nome: "Orc",
         pv: 25,
         derrotado: false,
         xpInimigo: 2,
+        player: false,
         defesa: 10,
+        atributos: {
+            destreza: 6,
+            vigor: 10,
+            astucia: 6,
+            vontade: 6,
+        }
+
     }, {
         nome: "Lobo",
         pv: 20,
         derrotado: false,
         xpInimigo: 1,
+        player: false,
         defesa: 8,
+        atributos: {
+            destreza: 10,
+            vigor: 6,
+            astucia: 8,
+            vontade: 6,
+        }
     }
 ];
 
 let inimigoAtual = null;
-let emCombate = false;
 
 const itensDoMapa = {
 
@@ -59,10 +82,10 @@ let acoesMCombate = [ "Atacar", "Defender", "Usar Item", "Fugir" ];
 
 let nome = prompt("Digite seu nome: ");
 let nomePersonagem = prompt("Digite o nome do seu personagem: ");
-personagem.nome = nome;
-personagem.nomePersonagem = nomePersonagem;
+personagem.jogador = nome;
+personagem.nome = nomePersonagem;
 
-console.log(`Olá, ${personagem.nome}, o nome do seu personagem é ${personagem.nomePersonagem}.`);
+console.log(`Olá, ${personagem.jogador}, o nome do seu personagem é ${personagem.nome}.`);
 console.log("Agora, vamos definir os atributos do seu personagem.");
 
 function criarPersonagem() {
@@ -86,7 +109,7 @@ function criarPersonagem() {
     personagem.defesa = Number(personagem.atributos.destreza);
     personagem.defesaMagica = Number(personagem.atributos.astucia);
 
-    console.log(`\nAtributos do personagem ${personagem.nomePersonagem}:`);
+    console.log(`\nAtributos do personagem ${personagem.nome}:`);
     for (let atributo in personagem.atributos) {
         let capital= atributo.charAt(0).toUpperCase() + atributo.slice(1);
         console.log(`${capital}: ${personagem.atributos[atributo]}`);
@@ -105,10 +128,10 @@ function setarInimigoAtual(enemy) {
 
 }
 
-    function atacar(enemy) {
+    function atacar(personagem, enemy) {
         let dadoD1 = [];
-        dadoD1.push(rolarDestreza());
-        dadoD1.push(rolarVigor());
+        dadoD1.push(rolarDado(Number(personagem.atributos.destreza)));
+        dadoD1.push(rolarDado(Number(personagem.atributos.vigor)));
         
         // for (let i = 0; i < dadoD1.length; i++) {
         //    console.log(`Dado ${i + 1}: ${dadoD1[i]}`);
@@ -121,36 +144,41 @@ function setarInimigoAtual(enemy) {
 
             if (enemy.pv === 0 || enemy.pv < 0) {
                 enemy.derrotado = true;
-                console.log("O inimigo já foi derrotado!");
-                emCombate = false;
+                console.log(`O ${enemy.nome} já foi derrotado!`);
             } else {
                 if (!enemy.derrotado) {
-                    emCombate = true;
                     let acerto = dadoD1.reduce((a, b) => a + b, 0);
-                    console.log(`Você rolou um acerto de ${acerto}.`);
-                    console.log(`Defesa do inimigo: ${enemy.defesa}`);
+                    console.log(`O personagem ${personagem.nome} rolou: ${acerto}.`);
+                    console.log(`Defesa do ${enemy.nome}: ${enemy.defesa}`);
                     if (acerto > enemy.defesa) {
                         let dano = Number(Math.max(...dadoD1)) + 5;
                         enemy.pv -= dano;
 
-                        console.log(`Você acertou o inimigo e causou ${dano} de dano!`);
+                        console.log(`${personagem.nome} acertou e causou ${dano} de dano!`);
                         
 
                             if (enemy.pv === 0 || enemy.pv < 0) {
-                            enemy.pv = 0;
-                            enemy.derrotado = true;
-                            console.log(`Você derrotou o inimigo ganhou ${enemy.xpInimigo} de experiência!`);
-                                personagem.xp += Number(10 * enemy.xpInimigo);
-                                subirNivel();
+                                enemy.pv = 0;
+                                enemy.derrotado = true;
+                                if (enemy.player === false) {
+                                console.log(`Você derrotou o inimigo ganhou ${enemy.xpInimigo} de experiência!`);
+                                    inimigoAtual = null;
+                                    personagem.xp += Number(10 * enemy.xpInimigo);
+                                    subirNivel();
+                                    enemy.derrotado = true;
+                                } else {
+                                    console.log(`Você morreu e deve fazer outro personagem.`);
+                                }
                             } else {
-                                console.log(`PV restante do inimigo: ${enemy.pv}`);
-                            }
+                                    console.log(`PV restante do inimigo: ${enemy.pv}`);
+                                }
                         } else {
                             
                             console.log("Você errou o ataque!");
                         }
                     } else {
                         console.log("O inimigo já foi derrotado!");
+                        inimigoAtual = null;
                     }
             }
             }
@@ -160,7 +188,7 @@ function setarInimigoAtual(enemy) {
     }
 
     function mostrarInimigo (enemy) {
-        console.log(" ==== INIMIGO A FRENTE ====");
+        console.log("\n ==== INIMIGO A FRENTE ====");
         console.log(`Tipo de Inimigo: ${enemy.nome}`);
         console.log(`Vida do Inimigo: ${enemy.pv}`);
         console.log(`Defesa do Inimigo: ${enemy.defesa}`);
@@ -192,7 +220,7 @@ function setarInimigoAtual(enemy) {
     }
 
     function checarStatus () {
-        console.log(`Atributos do personagem ${personagem.nomePersonagem}:`);
+        console.log(`Atributos do personagem ${personagem.nome}:`);
     for (let atributo in personagem.atributos) {
         let capital= atributo.charAt(0).toUpperCase() + atributo.slice(1);
         console.log(`${capital}: ${personagem.atributos[atributo]}`);
@@ -271,7 +299,6 @@ function setarInimigoAtual(enemy) {
                     "Prepare-se para a batalha!");
                     inimigoAtual = inimigoDaVez();
                 mostrarInimigo(inimigoAtual);
-                emCombate = true;
                 break;
             case 3:
             case 4:
@@ -288,9 +315,19 @@ function setarInimigoAtual(enemy) {
         }
     }
 
+    function ataqueInimigo (enemy){
+        if (enemy.derrotado !== true){
+
+        }
+    }
+
+    function rolarIniciativa(personagem) {
+        return rolarDado(personagem.destreza);
+    }
+
     while (true) {
         console.log("\nEscolha uma ação: ");
-        if (emCombate === false){
+        if (inimigoAtual === null){
             mostrarMenuExploração();
             let escolhas = prompt();
         switch (escolhas) {
@@ -313,10 +350,9 @@ function setarInimigoAtual(enemy) {
         } else {
             mostrarMenuCombate();
             let escolhaCombate = prompt();
-            switch (escolhasCombate) {
+            switch (escolhaCombate) {
             case "1":
-                inimigoAtual = inimigoDaVez();
-                atacar(inimigoAtual);
+                atacar(personagem, inimigoAtual);
                 break;
             case "2":
                 //Criar o ataque do inimigo
